@@ -1,7 +1,7 @@
 {
   "name": "Scientific Calculator",
   "short_name": "Calculator",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#121216",
@@ -21,3 +21,4 @@
     }
   ]
 }
+
