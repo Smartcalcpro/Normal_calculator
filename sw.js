@@ -1,13 +1,19 @@
-const CACHE_NAME = 'sci-calc-v1';
+const CACHE_NAME = 'sci-calc-v3';
 const ASSETS = [
     './',
-    './index.html'
+    './index.html',
+    './manifest.json'
 ];
 
 self.addEventListener('install', (e) => {
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
     );
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+    e.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (e) => {
@@ -15,3 +21,4 @@ self.addEventListener('fetch', (e) => {
         caches.match(e.request).then((res) => res || fetch(e.request))
     );
 });
+

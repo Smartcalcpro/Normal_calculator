@@ -7,20 +7,8 @@
     <meta name="theme-color" content="#121216">
     <meta name="description" content="A scientific calculator with standard keyboard layout.">
 
-    <!-- Embedded Web App Manifest -->
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "Scientific Calculator",
-        "short_name": "Calculator",
-        "start_url": "./index.html",
-        "display": "standalone",
-        "background_color": "#121216",
-        "theme_color": "#121216",
-        "icons": [{
-            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>",
-            "sizes": "512x512",
-            "type": "image/svg+xml"
-        }]
-    }'>
+    <!-- External Manifest Link (MUST be external for Android Chrome PWA) -->
+    <link rel="manifest" href="./manifest.json">
 
     <style>
         * {
@@ -270,9 +258,7 @@
             updateDisplay();
         }
 
-        function moveCursor(dir) {
-            // Visual cursor logic space
-        }
+        function moveCursor(dir) {}
 
         function updateDisplay() {
             exprEl.innerText = currentExpr.replace(/root/g, '√').replace(/\*/g, '×');
@@ -408,14 +394,15 @@
                 .join(' × ');
         }
 
-        // External Service Worker Registration
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(() => console.log('Service Worker Registered!'))
+                    .then((reg) => console.log('Service Worker Registered! Scope:', reg.scope))
                     .catch((err) => console.log('SW Registration Failed:', err));
             });
         }
     </script>
 </body>
 </html>
+
