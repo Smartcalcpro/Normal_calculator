@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +11,7 @@
     <link rel="manifest" href='data:application/manifest+json,{
         "name": "Scientific Calculator",
         "short_name": "Calculator",
-        "start_url": ".",
+        "start_url": "./index.html",
         "display": "standalone",
         "background_color": "#121216",
         "theme_color": "#121216",
@@ -127,26 +126,22 @@
             transform: scale(0.95);
         }
 
-        /* Top Function Buttons */
         button.func {
             background-color: #3a3d4a;
             color: #d1d5db;
             font-size: 0.95rem;
         }
 
-        /* Number Pad */
         button.num {
             background-color: #1e2026;
             color: #ffffff;
         }
 
-        /* Basic Operators */
         button.operator {
             background-color: #2e303a;
             color: #e5e7eb;
         }
 
-        /* Action Buttons (Clear, Del) */
         button.action-ac {
             background-color: #e67e22;
             color: #ffffff;
@@ -168,7 +163,6 @@
 <body>
 
     <div class="calculator">
-        <!-- Display Mode Dropdown -->
         <div class="mode-selector">
             <label for="mode">Format:</label>
             <select id="mode" onchange="updateDisplayMode()">
@@ -181,13 +175,11 @@
             </select>
         </div>
 
-        <!-- Display Area -->
         <div class="display-container">
             <div class="expression" id="expression"></div>
             <div class="result" id="result">0</div>
         </div>
 
-        <!-- Buttons Grid (5 Columns Layout) -->
         <div class="buttons">
             <!-- Row 1 -->
             <button class="func" onclick="appendToken('^(-1)')">x⁻¹</button>
@@ -279,7 +271,7 @@
         }
 
         function moveCursor(dir) {
-            // Simulated cursor visual feedback
+            // Visual cursor logic space
         }
 
         function updateDisplay() {
@@ -304,19 +296,10 @@
             try {
                 let parseExpr = currentExpr;
 
-                // Handle percentage (e.g. 50% -> 50/100)
                 parseExpr = parseExpr.replace(/(\d+(\.\d+)?)%/g, '($1/100)');
-
-                // Parse nth root (x root y -> y ^ (1/x))
                 parseExpr = parseExpr.replace(/(\d+(\.\d+)?|\bAns\b)\s*root\s*(\d+(\.\d+)?|\bAns\b|\([^\)]+\))/g, '($3^(1/($1)))');
-                
-                // Replace root keyword
                 parseExpr = parseExpr.replace(/root/g, '**(1/)');
-                
-                // Power operator
                 parseExpr = parseExpr.replace(/\^/g, '**');
-                
-                // Previous Answer
                 parseExpr = parseExpr.replace(/Ans/g, `(${lastAns})`);
 
                 let val = eval(parseExpr);
@@ -366,8 +349,6 @@
             }
         }
 
-        // --- MATH HELPERS ---
-
         function toFraction(val, maxDen = 10000) {
             if (Number.isInteger(val)) return val.toString();
             let sign = val < 0 ? "-" : "";
@@ -404,7 +385,6 @@
             return rem === 0 ? `${sign}${whole}` : `${sign}${whole} ${rem}/${den}`;
         }
 
-        // Fixed Prime Factorization Logic
         function toPrimeFactors(n) {
             if (!Number.isInteger(n) || n <= 1 || n > 10000000) {
                 return 'Int > 1 required';
@@ -428,25 +408,12 @@
                 .join(' × ');
         }
 
-        // Service Worker
+        // External Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'sci-calc-v2';
-                    self.addEventListener('install', (e) => {
-                        e.waitUntil(
-                            caches.open(CACHE_NAME).then((cache) => cache.addAll(['./']))
-                        );
-                    });
-                    self.addEventListener('fetch', (e) => {
-                        e.respondWith(
-                            caches.match(e.request).then((res) => res || fetch(e.request))
-                        );
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob))
-                    .catch((err) => console.log('SW failed:', err));
+                navigator.serviceWorker.register('./sw.js')
+                    .then(() => console.log('Service Worker Registered!'))
+                    .catch((err) => console.log('SW Registration Failed:', err));
             });
         }
     </script>
