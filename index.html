@@ -1,0 +1,454 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific PWA Calculator</title>
+    <meta name="theme-color" content="#121216">
+    <meta name="description" content="A scientific calculator with standard keyboard layout.">
+
+    <!-- Embedded Web App Manifest -->
+    <link rel="manifest" href='data:application/manifest+json,{
+        "name": "Scientific Calculator",
+        "short_name": "Calculator",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#121216",
+        "theme_color": "#121216",
+        "icons": [{
+            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }]
+    }'>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0d0d11;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .calculator {
+            background-color: #17181c;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            background: #23242a;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        .mode-selector label {
+            font-size: 0.8rem;
+            color: #9a9cae;
+        }
+
+        .mode-selector select {
+            background: #2e3038;
+            color: #e1e3ec;
+            border: none;
+            outline: none;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .display-container {
+            background-color: #d8e3e2;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: right;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .expression {
+            color: #333;
+            font-size: 1.1rem;
+            min-height: 1.3rem;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .result {
+            color: #000;
+            font-size: 1.8rem;
+            font-weight: 600;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        button {
+            padding: 14px 2px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background-color: #2e303a;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.15s, transform 0.05s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Top Function Buttons */
+        button.func {
+            background-color: #3a3d4a;
+            color: #d1d5db;
+            font-size: 0.95rem;
+        }
+
+        /* Number Pad */
+        button.num {
+            background-color: #1e2026;
+            color: #ffffff;
+        }
+
+        /* Basic Operators */
+        button.operator {
+            background-color: #2e303a;
+            color: #e5e7eb;
+        }
+
+        /* Action Buttons (Clear, Del) */
+        button.action-ac {
+            background-color: #e67e22;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        button.action-del {
+            background-color: #d35400;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        button.equal {
+            background-color: #3a3d4a;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <!-- Display Mode Dropdown -->
+        <div class="mode-selector">
+            <label for="mode">Format:</label>
+            <select id="mode" onchange="updateDisplayMode()">
+                <option value="normal">Normal</option>
+                <option value="decimal">Decimal</option>
+                <option value="fraction">Fraction</option>
+                <option value="mix">Mixed Fraction</option>
+                <option value="scientific">Scientific</option>
+                <option value="prime">Prime Factors</option>
+            </select>
+        </div>
+
+        <!-- Display Area -->
+        <div class="display-container">
+            <div class="expression" id="expression"></div>
+            <div class="result" id="result">0</div>
+        </div>
+
+        <!-- Buttons Grid (5 Columns Layout) -->
+        <div class="buttons">
+            <!-- Row 1 -->
+            <button class="func" onclick="appendToken('^(-1)')">x⁻¹</button>
+            <button class="func" onclick="moveCursor(-1)">◄</button>
+            <button class="func" onclick="moveCursor(1)">►</button>
+            <button class="action-del" onclick="deleteLast()">⌫</button>
+            <button class="action-ac" onclick="clearAll()">AC</button>
+
+            <!-- Row 2 -->
+            <button class="func" onclick="appendToken('/')">■/■</button>
+            <button class="func" onclick="appendToken('^')">■ⁿ</button>
+            <button class="func" onclick="appendToken('root')">ⁿ√■</button>
+            <button class="func" onclick="setMode('prime')">FACT</button>
+            <button class="func" onclick="appendToken('MC')">MC</button>
+
+            <!-- Row 3 -->
+            <button class="func" onclick="appendToken('(')">(</button>
+            <button class="func" onclick="appendToken(')')">)</button>
+            <button class="func" onclick="appendToken('M+')">M+</button>
+            <button class="func" onclick="appendToken('M-')">M-</button>
+            <button class="func" onclick="appendToken('MR')">MR</button>
+
+            <!-- Row 4 -->
+            <button class="num" onclick="appendToken('7')">7</button>
+            <button class="num" onclick="appendToken('8')">8</button>
+            <button class="num" onclick="appendToken('9')">9</button>
+            <button class="operator" onclick="appendToken('/')">÷</button>
+            <button class="func" onclick="cycleMode()">S⇔D</button>
+
+            <!-- Row 5 -->
+            <button class="num" onclick="appendToken('4')">4</button>
+            <button class="num" onclick="appendToken('5')">5</button>
+            <button class="num" onclick="appendToken('6')">6</button>
+            <button class="operator" onclick="appendToken('*')">×</button>
+            <button class="func" onclick="appendToken('*10^')">Exp</button>
+
+            <!-- Row 6 -->
+            <button class="num" onclick="appendToken('1')">1</button>
+            <button class="num" onclick="appendToken('2')">2</button>
+            <button class="num" onclick="appendToken('3')">3</button>
+            <button class="operator" onclick="appendToken('-')">-</button>
+            <button class="func" onclick="appendToken('Ans')">Ans</button>
+
+            <!-- Row 7 -->
+            <button class="operator" onclick="appendToken('%')">%</button>
+            <button class="num" onclick="appendToken('0')">0</button>
+            <button class="num" onclick="appendToken('.')">.</button>
+            <button class="operator" onclick="appendToken('+')">+</button>
+            <button class="equal" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let currentExpr = '';
+        let lastAns = 0;
+        let lastRawResult = null;
+
+        const exprEl = document.getElementById('expression');
+        const resEl = document.getElementById('result');
+        const modeEl = document.getElementById('mode');
+
+        function appendToken(token) {
+            if (token === 'root') {
+                currentExpr += ' root ';
+            } else {
+                currentExpr += token;
+            }
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentExpr = '';
+            lastRawResult = null;
+            resEl.innerText = '0';
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (currentExpr.endsWith(' root ')) {
+                currentExpr = currentExpr.slice(0, -6);
+            } else if (currentExpr.endsWith('Ans')) {
+                currentExpr = currentExpr.slice(0, -3);
+            } else if (currentExpr.endsWith('*10^')) {
+                currentExpr = currentExpr.slice(0, -4);
+            } else {
+                currentExpr = currentExpr.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function moveCursor(dir) {
+            // Simulated cursor visual feedback
+        }
+
+        function updateDisplay() {
+            exprEl.innerText = currentExpr.replace(/root/g, '√').replace(/\*/g, '×');
+        }
+
+        function setMode(mode) {
+            modeEl.value = mode;
+            if (lastRawResult !== null) formatAndShowResult();
+        }
+
+        function cycleMode() {
+            const modes = ['normal', 'decimal', 'fraction', 'mix', 'scientific', 'prime'];
+            let nextIndex = (modes.indexOf(modeEl.value) + 1) % modes.length;
+            modeEl.value = modes[nextIndex];
+            updateDisplayMode();
+        }
+
+        function calculate() {
+            if (!currentExpr) return;
+
+            try {
+                let parseExpr = currentExpr;
+
+                // Handle percentage (e.g. 50% -> 50/100)
+                parseExpr = parseExpr.replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+
+                // Parse nth root (x root y -> y ^ (1/x))
+                parseExpr = parseExpr.replace(/(\d+(\.\d+)?|\bAns\b)\s*root\s*(\d+(\.\d+)?|\bAns\b|\([^\)]+\))/g, '($3^(1/($1)))');
+                
+                // Replace root keyword
+                parseExpr = parseExpr.replace(/root/g, '**(1/)');
+                
+                // Power operator
+                parseExpr = parseExpr.replace(/\^/g, '**');
+                
+                // Previous Answer
+                parseExpr = parseExpr.replace(/Ans/g, `(${lastAns})`);
+
+                let val = eval(parseExpr);
+
+                if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
+                    lastRawResult = val;
+                    lastAns = val;
+                    formatAndShowResult();
+                } else {
+                    resEl.innerText = 'Error';
+                }
+            } catch (err) {
+                resEl.innerText = 'Syntax Error';
+            }
+        }
+
+        function updateDisplayMode() {
+            if (lastRawResult !== null) {
+                formatAndShowResult();
+            }
+        }
+
+        function formatAndShowResult() {
+            const n = lastRawResult;
+            const mode = modeEl.value;
+
+            switch (mode) {
+                case 'decimal':
+                    resEl.innerText = Number.isInteger(n) ? n.toString() : n.toFixed(6).replace(/\.?0+$/, '');
+                    break;
+                case 'scientific':
+                    resEl.innerText = n.toExponential(4);
+                    break;
+                case 'fraction':
+                    resEl.innerText = toFraction(n);
+                    break;
+                case 'mix':
+                    resEl.innerText = toMixedFraction(n);
+                    break;
+                case 'prime':
+                    resEl.innerText = toPrimeFactors(n);
+                    break;
+                case 'normal':
+                default:
+                    resEl.innerText = n.toString();
+                    break;
+            }
+        }
+
+        // --- MATH HELPERS ---
+
+        function toFraction(val, maxDen = 10000) {
+            if (Number.isInteger(val)) return val.toString();
+            let sign = val < 0 ? "-" : "";
+            val = Math.abs(val);
+
+            let m00 = 1, m01 = 0, m10 = 0, m11 = 1;
+            let x = val;
+
+            while (m10 * Math.floor(x) + m11 <= maxDen) {
+                let a = Math.floor(x);
+                let next_m00 = a * m00 + m01;
+                let next_m10 = a * m10 + m11;
+                m01 = m00; m00 = next_m00;
+                m11 = m10; m10 = next_m10;
+                if (x === a) break;
+                x = 1 / (x - a);
+            }
+            return `${sign}${m00}/${m10}`;
+        }
+
+        function toMixedFraction(val) {
+            if (Number.isInteger(val)) return val.toString();
+            let fracStr = toFraction(val);
+            if (!fracStr.includes('/')) return fracStr;
+
+            let [num, den] = fracStr.split('/').map(Number);
+            let sign = num < 0 ? "-" : "";
+            num = Math.abs(num);
+
+            if (num < den) return `${sign}${num}/${den}`;
+            let whole = Math.floor(num / den);
+            let rem = num % den;
+
+            return rem === 0 ? `${sign}${whole}` : `${sign}${whole} ${rem}/${den}`;
+        }
+
+        // Fixed Prime Factorization Logic
+        function toPrimeFactors(n) {
+            if (!Number.isInteger(n) || n <= 1 || n > 10000000) {
+                return 'Int > 1 required';
+            }
+
+            let temp = n;
+            const factors = {};
+
+            for (let d = 2; d * d <= temp; d++) {
+                while (temp % d === 0) {
+                    factors[d] = (factors[d] || 0) + 1;
+                    temp /= d;
+                }
+            }
+            if (temp > 1) {
+                factors[temp] = (factors[temp] || 0) + 1;
+            }
+
+            return Object.entries(factors)
+                .map(([base, exp]) => exp > 1 ? `${base}^${exp}` : base)
+                .join(' × ');
+        }
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'sci-calc-v2';
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(
+                            caches.open(CACHE_NAME).then((cache) => cache.addAll(['./']))
+                        );
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(
+                            caches.match(e.request).then((res) => res || fetch(e.request))
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob))
+                    .catch((err) => console.log('SW failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
